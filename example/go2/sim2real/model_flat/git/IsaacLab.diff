@@ -1,0 +1,43 @@
+--- git status ---
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   source/isaaclab_tasks/isaaclab_tasks/manager_based/locomotion/velocity/config/go2/rough_env_cfg.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	tmp/
+
+no changes added to commit (use "git add" and/or "git commit -a") 
+
+
+--- git diff ---
+diff --git a/source/isaaclab_tasks/isaaclab_tasks/manager_based/locomotion/velocity/config/go2/rough_env_cfg.py b/source/isaaclab_tasks/isaaclab_tasks/manager_based/locomotion/velocity/config/go2/rough_env_cfg.py
+index 22fb69cff4..093e301e90 100644
+--- a/source/isaaclab_tasks/isaaclab_tasks/manager_based/locomotion/velocity/config/go2/rough_env_cfg.py
++++ b/source/isaaclab_tasks/isaaclab_tasks/manager_based/locomotion/velocity/config/go2/rough_env_cfg.py
+@@ -7,6 +7,9 @@ from isaaclab.utils import configclass
+ 
+ from isaaclab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import LocomotionVelocityRoughEnvCfg
+ 
++import math
++import isaaclab_tasks.manager_based.locomotion.velocity.mdp as mdp
++
+ ##
+ # Pre-defined configs
+ ##
+@@ -59,6 +62,11 @@ class UnitreeGo2RoughEnvCfg(LocomotionVelocityRoughEnvCfg):
+ 
+         # terminations
+         self.terminations.base_contact.params["sensor_cfg"].body_names = "base"
++        
++        # command
++        self.commands.base_velocity.ranges = mdp.UniformVelocityCommandCfg.Ranges(
++            lin_vel_x=(-1.5, 1.5), lin_vel_y=(-1.5, 1.5), ang_vel_z=(-1.5, 1.5), heading=(-math.pi, math.pi)
++        )
+ 
+ 
+ @configclass

@@ -2,11 +2,13 @@
 """
 Go2 로봇 모드 토글 스크립트
 Low-level 제어 모드 <-> MCF 모드 전환
+
+Refactored to use shared utility modules.
 """
 import sys
-import time
-from unitree_sdk2py.core.channel import ChannelFactoryInitialize
-from unitree_sdk2py.comm.motion_switcher.motion_switcher_client import MotionSwitcherClient
+
+from utils import unitree_communication as comm
+from utils import unitree_mode_manager as mode_mgr
 
 
 def toggle_mode():
@@ -18,36 +20,29 @@ def toggle_mode():
     print("\n" + "="*60)
     print("  Go2 로봇 모드 토글")
     print("="*60)
-    
-    # MotionSwitcherClient 초기화
-    msc = MotionSwitcherClient()
-    msc.SetTimeout(5.0)
-    msc.Init()
-    
+
+    # ModeManager 초기화
+    manager = mode_mgr.UnitreeModeManager()
+
     # 현재 모드 확인
     print("\n[1단계] 현재 모드 확인 중...")
-    status, result = msc.CheckMode()
-    
+    status, result = manager.check_current_mode()
+
     if status != 0:
         print(f"⚠ 오류: 모드 확인 실패 (status code: {status})")
         return
-    
+
     current_mode = result.get('name', None) if result else None
-    
+
     if current_mode:
         # 모드가 있음 → Low-level 모드로 전환
         print(f"현재 모드: {current_mode}")
         print("\n[2단계] Low-level 제어 모드로 전환 중...")
         print("  → 모드 해제 (ReleaseMode)")
-        
-        code, _ = msc.ReleaseMode()
-        
-        if code == 0:
-            time.sleep(0.5)
-            # 확인
-            status, result = msc.CheckMode()
-            new_mode = result.get('name', None) if result else None
-            
+
+        success = manager.disable_sport_mode(verbose=False)
+
+        if success:
             print("\n" + "="*60)
             print("✓ 전환 완료!")
             print(f"  이전: {current_mode}")
@@ -56,22 +51,23 @@ def toggle_mode():
             print("  → 리모컨 제어 불가")
             print("="*60)
         else:
-            print(f"\n⚠ 오류: 모드 해제 실패 (code: {code})")
-    
+            print(f"\n⚠ 오류: 모드 해제 실패")
+
     else:
         # 모드가 없음 → MCF 모드로 전환
         print("현재 모드: Low-level 제어 모드 (모드 없음)")
         print("\n[2단계] MCF 모드로 전환 중...")
         print("  → 모드 선택 (SelectMode: 'mcf')")
-        
-        code, _ = msc.SelectMode("mcf")
-        
+
+        code, _ = manager.select_mode("mcf")
+
         if code == 0:
+            import time
             time.sleep(0.5)
             # 확인
-            status, result = msc.CheckMode()
+            status, result = manager.check_current_mode()
             new_mode = result.get('name', None) if result else None
-            
+
             print("\n" + "="*60)
             print("✓ 전환 완료!")
             print(f"  이전: Low-level 제어 모드")
@@ -90,13 +86,11 @@ def check_mode_only():
     print("\n" + "="*60)
     print("  현재 모드 확인")
     print("="*60)
-    
-    msc = MotionSwitcherClient()
-    msc.SetTimeout(5.0)
-    msc.Init()
-    
-    status, result = msc.CheckMode()
-    
+
+    manager = mode_mgr.UnitreeModeManager()
+
+    status, result = manager.check_current_mode()
+
     if status == 0 and result:
         mode_name = result.get('name', None)
         if mode_name:
@@ -105,27 +99,25 @@ def check_mode_only():
         else:
             print(f"\n현재 모드: Low-level 제어 모드 (모드 없음)")
             print("상태: 스크립트 제어 가능, 리모컨 불가")
-        
+
         print(f"\n전체 결과: {result}")
     else:
         print(f"⚠ 오류: status={status}, result={result}")
-    
+
     print("="*60)
 
 
 if __name__ == '__main__':
     # 네트워크 초기화
-    if len(sys.argv) > 1:
-        ChannelFactoryInitialize(0, sys.argv[1])
-    else:
-        ChannelFactoryInitialize(0)
-    
+    network_interface = sys.argv[1] if len(sys.argv) > 1 else None
+    comm.initialize_channel_factory(network_interface, verbose=False)
+
     print("\n사용 가능한 명령:")
     print("1. 모드 토글 (Low-level ↔ MCF)")
     print("2. 현재 모드만 확인")
-    
+
     choice = input("\n선택 (1 또는 2): ").strip()
-    
+
     if choice == "1":
         try:
             toggle_mode()

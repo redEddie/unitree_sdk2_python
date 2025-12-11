@@ -1,3 +1,16 @@
+Quick start (Go2 sim2real with Kalman velocity):
+
+```bash
+cd ~/unitree_sdk2_python/example/go2/sim2real
+python3 robot_policy_runner_kalman.py eth0 ./model_flat/exported/policy.onnx
+```
+
+```bash
+python3 robot_policy_runner_kalman.py eno1
+```
+
+---
+
 # unitree_sdk2_python
 Python interface for unitree sdk2
 
